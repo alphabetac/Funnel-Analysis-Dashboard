@@ -1,0 +1,451 @@
+---
+title: "Trustpilot Dynamic Funnel Analysis"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: flatly
+    orientation: columns
+runtime: shiny
+---
+
+```{r global, include = FALSE}
+
+## Load libraries ---------------------
+
+library(glue)
+library(tidyverse)
+library(plotly)
+library(magrittr)
+library(flexdashboard)
+library(lubridate)
+library(DT)
+library(hjplottools)
+library(zoo)
+library(here)
+
+## Set options ------------------------
+
+options(scipen = 999)
+
+## Load data --------------------------
+
+brand_awareness <- read_csv(here("03.Data", "Processed Data",
+                                 "Prompted Brand Awareness.csv"))
+uk_consumer_search <- read_csv(here("03.Data", "Processed Data",
+                                    "UK Consumer Site Search Performance.csv"))
+it_consumer_search <- read_csv(here("03.Data", "Processed Data",
+                                    "IT Consumer Site Search Performance.csv"))
+uk_business_metrics <- read_csv(here("03.Data", "Processed Data",
+                                  "UK Business Metrics.csv"))
+it_business_metrics <- read_csv(here("03.Data", "Processed Data",
+                                  "IT Business Metrics.csv"))
+google_trends <- read_csv(here("03.Data", "Processed Data",
+                               "Google Trends - Share of Search.csv"))
+business_traffic <- read_csv(here("03.Data", "Processed Data",
+                                  "Weekly Business Page Loads.csv"))
+
+```
+
+```{r Create Regression Data, include = FALSE}
+
+## Create comprehensive dataset
+full_data <- google_trends %>%
+  left_join(uk_business_metrics %>%
+              mutate(country = "UK") %>%
+              add_row(it_business_metrics %>%
+                        mutate(country = "IT")),
+            by = c("month_start", "month", "year")) %>%
+  mutate(quarter = quarter(month_start)) %>%
+  left_join(brand_awareness %>%
+              filter(country == "UK" | country == "IT"),
+            by = c("quarter", "year", "country")) %>%
+  left_join(business_traffic %>%
+              pivot_longer(cols = 4:5,
+                           names_to = "country",
+                           names_pattern = "(uk|it)_consumer_traffic",
+                           values_to = "biz_traffic_consumer") %>%
+              mutate(month = month(week_start),
+                     country = str_to_upper(country)) %>%
+              group_by(month, year, country) %>%
+              summarise(biz_traffic_consumer = sum(biz_traffic_consumer)),
+            by = c("month", "year", "country")) %>%
+  relocate(quarter, .after = month) %>%
+  relocate(quarter_start, .after = quarter)
+
+```
+
+```{r Generate Regression Output, include = FALSE}
+
+## Regression 1 (share_of_search ~ prompted_awareness, UK)
+reg_1_uk <- full_data %>%
+  filter(country == "UK") %$%
+  lm(share_of_search ~ prompted_awareness)
+
+## Regression 2 (consumer_users ~ share_of_search, UK)
+reg_2_uk <- full_data %>%
+  filter(country == "UK") %$%
+  lm(consumer_sessions ~ share_of_search)
+
+## Regression 3 (traffic ~ consumer_sessions, UK)
+reg_3_uk <- full_data %>%
+  filter(country == "UK") %$%
+  lm(biz_traffic_consumer ~ consumer_sessions)
+
+## Regression 4 (consumer_leads ~ traffic, UK)
+reg_4_uk <- full_data %>%
+  filter(country == "UK") %$%
+  lm(consumer_leads ~ biz_traffic_consumer)
+
+```
+
+Funnel Analysis Overview
+=======================================================================
+
+Column {data-width = 500}
+-----------------------------------------------------------------------
+
+```{r}
+
+
+
+```
+
+Column {data-width = 500}
+-----------------------------------------------------------------------
+
+
+Funnel Design - UK
+=======================================================================
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+
+sliderInput("prompted_awareness", label = "Prompted Brand Awareness",
+            min = 0.2, max = 0.8, value = 0.5, step = 0.01)
+
+selectInput("selected_country", label = "Select UK/IT",
+            choices = c("UK", "IT"))
+
+```
+
+Column {.tabset}
+-----------------------------------------------------------------------
+
+### Complete Funnel
+
+```{r}
+
+renderPlotly({
+  
+  ## Generate intercepts
+  promp_aware <- input$prompted_awareness
+  shr_search <- reg_1_uk$coefficients[['(Intercept)']] +
+    (reg_1_uk$coefficients[['prompted_awareness']] * promp_aware)
+  cons_sessions <- reg_2_uk$coefficients[['(Intercept)']] +
+    (reg_2_uk$coefficients[['share_of_search']] * shr_search)
+  biz_traffic <- reg_3_uk$coefficients[['(Intercept)']] +
+    (reg_3_uk$coefficients[['consumer_sessions']] * cons_sessions)
+  
+  elements <- c("Prompted Awareness", "Share of Search", "Consumer Sessions",
+                "Business Site Traffic")
+  
+  plot_ly() %>%
+    add_trace(type = "funnel",
+              text = c(glue("Prompted Awareness: ", promp_aware),
+                       glue("Share of Search: ", round(shr_search, 2)),
+                       glue("Consumer Site Sessions: ",
+                            prettyNum(cons_sessions, big.mark = ",")),
+                       glue("Business Site Traffic (from Consumer Site): ",
+                            prettyNum(round(biz_traffic, 0), big.mark = ","))),
+              y = elements,
+              x = c(round(promp_aware, 2), round(shr_search, 2),
+                    round(cons_sessions / 4000000, 2),
+                    round(biz_traffic / 50000, 2))) %>%
+    layout(yaxis = list(categoryarray = elements))
+  
+})
+
+```
+
+### Chart A: Effect of Prompted Brand Awareness on Share of Search
+
+```{r} 
+
+## Create plot
+
+renderPlot({
+  ## Generate intercepts
+  promp_aware <- input$prompted_awareness
+  shr_search <- reg_1_uk$coefficients[['(Intercept)']] +
+    (reg_1_uk$coefficients[['prompted_awareness']] * promp_aware)
+  
+  ## Create plot
+  full_data %>%
+    filter(country == "UK") %>%
+    ggplot(aes(x = prompted_awareness, y = share_of_search)) +
+    geom_smooth(method = 'lm', formula = y ~ x, colour = "red") +
+    geom_point() +
+    labs(x = "Prompted Awarness", y = "Share of Search",
+         caption = paste("Adjusted R Squared: ",
+                         round(summary(reg_1_uk)$adj.r.squared, 2))) +
+    
+    ## Add dynamic intersection input
+    geom_segment(aes(x = promp_aware, y = -Inf,
+                     xend = promp_aware, yend = shr_search)) +
+    geom_segment(aes(x = -Inf, y = shr_search,
+                     xend = promp_aware, yend = shr_search)) +
+    geom_point(x = promp_aware, y = shr_search, colour = "purple", size = 5) +
+    geom_text(aes(x = promp_aware, y = shr_search),
+              label = glue("Prompted Awareness: ", promp_aware,
+                            "\nShare of Search: ", round(shr_search, 2)),
+              nudge_y = 0.04) +
+    
+    geom_text(aes(x = 0.275, y = 0.025),
+              label = glue("Share of Search = ",
+                           round(reg_1_uk$coefficients[['prompted_awareness']], 2),
+                           " * Prompted Awareness")) +
+    
+    hj_theme()
+})
+
+```
+
+#### Include text as well
+
+### Chart B: Effect of Share of Search on Unique User Sessions
+
+```{r}
+
+renderPlot({
+  ## Generate intercepts
+  promp_aware <- input$prompted_awareness
+  shr_search <- reg_1_uk$coefficients[['(Intercept)']] +
+    (reg_1_uk$coefficients[['prompted_awareness']] * promp_aware)
+  cons_usrs <- reg_2_uk$coefficients[['(Intercept)']] +
+    (reg_2_uk$coefficients[['share_of_search']] * shr_search)
+  
+  full_data %>%
+    filter(country == "UK") %>%
+    ggplot(aes(x = share_of_search, y = consumer_sessions)) +
+    geom_smooth(method = 'lm', formula = y ~ x, colour = "red") +
+    geom_point() +
+    labs(x = "Share of Search",
+         y = "Consumer Website Sessions (Monthly)",
+         caption = paste("Adjusted R Squared: ",
+                         round(summary(reg_2_uk)$adj.r.squared, 2))) +
+    
+    ## Add dynamic intersection input
+    geom_segment(aes(x = shr_search, y = -Inf,
+                     xend = shr_search, yend = cons_usrs)) +
+    geom_segment(aes(x = -Inf, y = cons_usrs,
+                     xend = shr_search, yend = cons_usrs)) +
+    geom_point(x = shr_search, y = cons_usrs, colour = "purple", size = 5) +
+    geom_text(aes(x = shr_search, y = cons_usrs),
+              label = paste("Share of Search: ", round(shr_search, 2),
+                            "\nUnique Users: ",
+                            prettyNum(round(cons_usrs, 0), big.mark = ",")),
+              nudge_y = 200000) +
+    
+    hj_theme()
+})
+
+```
+
+### Chart C: Effect of User Sessions on Traffic
+
+```{r}
+
+renderPlot({
+  ## Generate intercepts
+  promp_aware <- input$prompted_awareness
+  shr_search <- reg_1_uk$coefficients[['(Intercept)']] +
+    (reg_1_uk$coefficients[['prompted_awareness']] * promp_aware)
+  cons_sessions <- reg_2_uk$coefficients[['(Intercept)']] +
+    (reg_2_uk$coefficients[['share_of_search']] * shr_search)
+  biz_traffic <- reg_3_uk$coefficients[['(Intercept)']] +
+    (reg_3_uk$coefficients[['consumer_sessions']] * cons_sessions)
+  
+  full_data %>%
+    filter(country == "UK") %>%
+    ggplot(aes(x = consumer_sessions, y = biz_traffic_consumer)) +
+    geom_smooth(method = 'lm', formula = y ~ x, colour = "red") +
+    geom_point() +
+    labs(x = "Consumer Website Sessions (Monthly)",
+         y = "Business Site Traffic from Consumer Site",
+         caption = paste("Adjusted R Squared: ",
+                         round(summary(reg_3_uk)$adj.r.squared, 2))) +
+    
+    ### Add dynamic intersection input
+    geom_segment(aes(x = cons_sessions, y = -Inf,
+                     xend = cons_sessions, yend = biz_traffic)) +
+    geom_segment(aes(x = -Inf, y = biz_traffic,
+                     xend = cons_sessions, yend = biz_traffic)) +
+    geom_point(x = cons_sessions, y = biz_traffic, colour = "purple", size = 5) +
+    geom_text(
+      aes(x = cons_sessions, y = biz_traffic),
+      label = paste("Consumer Website Sessions (Monthly): ",
+                    prettyNum(round(cons_sessions, 2), big.mark = ","),
+                    "\nBusiness Site Traffic: ",
+                    prettyNum(round(biz_traffic, 0), big.mark = ",")),
+      nudge_y = 2000
+    ) +
+    
+    hj_theme()
+})
+
+```
+
+### Chart D: Effect of Business Site Traffic on Leads
+
+```{r}
+
+renderPlot({
+  ## Generate intercepts
+  promp_aware <- input$prompted_awareness
+  shr_search <- reg_1_uk$coefficients[['(Intercept)']] +
+    (reg_1_uk$coefficients[['prompted_awareness']] * promp_aware)
+  cons_sessions <- reg_2_uk$coefficients[['(Intercept)']] +
+    (reg_2_uk$coefficients[['share_of_search']] * shr_search)
+  biz_traffic <- reg_3_uk$coefficients[['(Intercept)']] +
+    (reg_3_uk$coefficients[['consumer_sessions']] * cons_sessions)
+  cons_leads <- reg_4_uk$coefficients[['(Intercept)']] +
+    (reg_4_uk$coefficients[['biz_traffic_consumer']] * biz_traffic)
+  
+  full_data %>%
+    filter(country == "UK") %>%
+    ggplot(aes(x = biz_traffic_consumer, y = consumer_leads)) +
+    geom_smooth(method = 'lm', formula = y ~ x, colour = "red") +
+    geom_point() +
+    labs(x = "Business Site Traffic from Consumer Site",
+         y = "Leads Generated from Consumer Site (Free Sign-ups and Demo Requests",
+         caption = paste("Adjusted R Squared: ",
+                         round(summary(reg_4_uk)$adj.r.squared, 2))) +
+    
+    ### Add dynamic intersection input
+    geom_segment(aes(x = biz_traffic, y = -Inf,
+                     xend = biz_traffic, yend = cons_leads)) +
+    geom_segment(aes(x = -Inf, y = cons_leads,
+                     xend = biz_traffic, yend = cons_leads)) +
+    geom_point(x = biz_traffic, y = cons_leads, colour = "purple", size = 5) +
+    geom_text(
+      aes(x = biz_traffic, y = cons_leads),
+      label = paste("Consumer Website Sessions (Monthly): ",
+                    prettyNum(round(biz_traffic, 2), big.mark = ","),
+                    "\nBusiness Site Traffic: ",
+                    prettyNum(round(cons_leads, 0), big.mark = ","))#,
+      #nudge_y = 2000
+    ) +
+    
+    hj_theme()
+})
+
+```
+
+
+Metric Comparisons
+=======================================================================
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+
+input_options <-
+  c("Prompted Brand Awareness" = "prompted_awareness",
+    "Share of Search" = "share_of_search",
+    "Consumer Users" = "consumer_users",
+    "Consumer Sessions" = "consumer_sessions",
+    "All Leads (from Consumer Website)" = "all_consumer_leads",
+    "Free Sign-up and Demo Request Leads (All Channels)" = "all_leads",
+    "Free Sign-up and Demo Request Leads (Consumer Site)" = "consumer_leads")
+
+selectInput("trustpilot_region", label = "Select Country",
+            choices = c("UK", "IT"))
+
+selectInput("comp-x", label = "X-Axis Metric", choices = input_options)
+
+selectInput("comp-y", label = "Y-Axis Metric", choices = input_options)
+
+#sliderInput("prompted_awareness", label = "Prompted Brand Awareness",
+#              min = 0.2, max = 0.8, value = 0.5, step = 0.01)
+
+```
+
+Column
+-----------------------------------------------------------------------
+
+### Chart
+
+```{r} 
+
+## Create plot
+
+renderPlot({
+  
+  #plot_data <- full_data %>%
+  #  group_by(case_when(input$`comp-x` == "prompted_awareness"))
+  
+  ## Create plot
+  full_data %>%
+    ggplot(aes_string(x = input$`comp-x`, y = input$`comp-y`)) +
+    geom_smooth(method = 'lm', formula = y ~ x, colour = "red") +
+    geom_point() +
+    hj_theme() +
+    scale_y_continuous(labels = function(x) {
+      prettyNum(x, big.mark = ",")
+    })
+})
+
+```
+
+
+Funnel Data
+=======================================================================
+
+```{r}
+
+renderTable({
+  
+  full_data %>%
+    filter(month_start >= "2017-01-01") %>%
+    
+    mutate(Month = format(month_start, "%B %Y"),
+           deals_won = as.integer(deals_won)) %>%
+    select(-c(month_start, month, quarter, quarter_start, year, renewal_rate,
+              price_expansion, net_renewal_rate)) %>%
+    
+    relocate(Month) %>%
+    relocate(prompted_awareness, .after = Month) %>%
+    relocate(share_of_search, .after = prompted_awareness) %>%
+    relocate(consumer_users, .after = share_of_search) %>%
+    relocate(consumer_sessions, .after = consumer_users) %>%
+    relocate(biz_traffic_consumer, .after = consumer_sessions) %>%
+    relocate(all_consumer_leads, .after = biz_traffic_consumer) %>%
+    relocate(all_leads, .after = all_consumer_leads) %>%
+    relocate(consumer_leads, .after = all_leads) %>%
+    relocate(deals_won, .after = consumer_leads) %>%
+    
+    mutate(across(.cols = c(consumer_users, consumer_sessions,
+                            biz_traffic_consumer, all_consumer_leads, all_leads,
+                            consumer_leads, retention),
+                  prettyNum, big.mark = ",")) %>%
+    
+    rename(
+      `Prompted Brand Awareness` = prompted_awareness,
+      `Share of Search` = share_of_search,
+      `Unique Consumer Website Users` = consumer_users,
+      `Unique Consumer Website sessions` = consumer_sessions,
+      `Business Page Loads (from Consumer Website)` = biz_traffic_consumer,
+      `All Leads (from Consumer Website)` = all_consumer_leads,
+      `Free Signup and Demo Request Leads (All Channels)` = all_leads,
+      `Free Signup and Demo Request Leads (Consumer Site)` = consumer_leads,
+      `Deals Won` = deals_won,
+      `Retention` = retention
+    )
+  
+}, striped = TRUE, align = 'l')
+
+```
+
+
