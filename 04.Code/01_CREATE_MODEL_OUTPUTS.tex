@@ -1,0 +1,172 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+  landscape]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Generate Model Outputs for Dynamic Funnel},
+  pdfauthor={Henry Johnston-Ellis},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{5}
+\ifluatex
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage[]{natbib}
+\bibliographystyle{plainnat}
+
+\title{Generate Model Outputs for Dynamic Funnel}
+\author{Henry Johnston-Ellis}
+\date{}
+
+\begin{document}
+\maketitle
+
+{
+\setcounter{tocdepth}{2}
+\tableofcontents
+}
+\% Table created by stargazer v.5.2.2 by Marek Hlavac, Harvard
+University. E-mail: hlavac at fas.harvard.edu \% Date and time: Wed, May
+18, 2022 - 12:30:12
+
+\begin{table}[!htbp] \centering 
+  \caption{Dynamic Funnel Models for UK} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}}lcccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{4}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-5} 
+\\[-1.8ex] & Search & Consumer Site Users & Business Site Traffic & Leads Generated \\ 
+\\[-1.8ex] & (1) & (2) & (3) & (4)\\ 
+\hline \\[-1.8ex] 
+ Prompted Awareness & $-$9.941$^{***}$ &  &  &  \\ 
+  & (3.141) &  &  &  \\ 
+  & & & & \\ 
+ Prompted Awareness (square term) & 11.090$^{***}$ &  &  &  \\ 
+  & (2.839) &  &  &  \\ 
+  & & & & \\ 
+ Search &  & 6,268,278.000$^{***}$ &  &  \\ 
+  &  & (595,032.000) &  &  \\ 
+  & & & & \\ 
+ Consumer Site Users &  &  & 0.002$^{***}$ &  \\ 
+  &  &  & (0.001) &  \\ 
+  & & & & \\ 
+ Business Site Traffic &  &  &  & 0.079$^{***}$ \\ 
+  &  &  &  & (0.018) \\ 
+  & & & & \\ 
+ Constant & 2.580$^{***}$ & 3,795,507.000$^{***}$ & 15,614.510$^{***}$ & $-$113.695 \\ 
+  & (0.857) & (361,597.400) & (4,216.191) & (536.936) \\ 
+  & & & & \\ 
+\hline \\[-1.8ex] 
+Observations & 36 & 38 & 38 & 38 \\ 
+R$^{2}$ & 0.906 & 0.755 & 0.230 & 0.346 \\ 
+Adjusted R$^{2}$ & 0.901 & 0.748 & 0.209 & 0.328 \\ 
+Residual Std. Error & 0.054 (df = 33) & 674,430.500 (df = 36) & 4,569.751 (df = 36) & 565.535 (df = 36) \\ 
+F Statistic & 159.921$^{***}$ (df = 2; 33) & 110.973$^{***}$ (df = 1; 36) & 10.769$^{***}$ (df = 1; 36) & 19.077$^{***}$ (df = 1; 36) \\ 
+\hline 
+\hline \\[-1.8ex] 
+\textit{Note:}  & \multicolumn{4}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+\end{tabular} 
+\end{table}
+
+\% Table created by stargazer v.5.2.2 by Marek Hlavac, Harvard
+University. E-mail: hlavac at fas.harvard.edu \% Date and time: Wed, May
+18, 2022 - 12:30:12
+
+\begin{table}[!htbp] \centering 
+  \caption{Dyanmic Funnel Models for Italy} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}}lcccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{4}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-5} 
+\\[-1.8ex] & Search & Consumer Site Users & Business Site Traffic & Leads Generated \\ 
+\\[-1.8ex] & (1) & (2) & (3) & (4)\\ 
+\hline \\[-1.8ex] 
+ Prompted Awareness & 3.084$^{***}$ &  &  &  \\ 
+  & (0.206) &  &  &  \\ 
+  & & & & \\ 
+ Search &  & 19,242,736.000$^{***}$ &  &  \\ 
+  &  & (3,302,268.000) &  &  \\ 
+  & & & & \\ 
+ Search (square term) &  & $-$24,821,780.000$^{***}$ &  &  \\ 
+  &  & (5,854,006.000) &  &  \\ 
+  & & & & \\ 
+ Search (cube term) &  & 10,949,104.000$^{***}$ &  &  \\ 
+  &  & (3,289,414.000) &  &  \\ 
+  & & & & \\ 
+ Consumer Site Users &  &  & 0.003$^{***}$ &  \\ 
+  &  &  & (0.0002) &  \\ 
+  & & & & \\ 
+ Business Site Traffic &  &  &  & 0.053$^{***}$ \\ 
+  &  &  &  & (0.005) \\ 
+  & & & & \\ 
+ Constant & $-$0.411$^{***}$ & $-$3,037,891.000$^{***}$ & 299.309 & 19.991 \\ 
+  & (0.065) & (579,634.700) & (397.807) & (25.529) \\ 
+  & & & & \\ 
+\hline \\[-1.8ex] 
+Observations & 39 & 43 & 42 & 51 \\ 
+R$^{2}$ & 0.858 & 0.872 & 0.779 & 0.660 \\ 
+Adjusted R$^{2}$ & 0.854 & 0.862 & 0.773 & 0.653 \\ 
+Residual Std. Error & 0.067 (df = 37) & 222,058.500 (df = 39) & 802.610 (df = 40) & 71.586 (df = 49) \\ 
+F Statistic & 223.309$^{***}$ (df = 1; 37) & 88.578$^{***}$ (df = 3; 39) & 140.629$^{***}$ (df = 1; 40) & 95.040$^{***}$ (df = 1; 49) \\ 
+\hline 
+\hline \\[-1.8ex] 
+\textit{Note:}  & \multicolumn{4}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+\end{tabular} 
+\end{table}
+
+\end{document}

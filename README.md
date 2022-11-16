@@ -1,1 +1,0 @@
-# Trustpilot-Dynamic-Funnel

@@ -1,0 +1,115 @@
+---
+title: "Generate Model Outputs for Dynamic Funnel"
+author: "Henry Johnston-Ellis"
+output:
+  pdf_document:
+    keep_tex: yes
+    latex_engine: pdflatex
+    fig_caption: yes
+    highlight: haddock
+    number_sections: yes
+    toc: yes
+    toc_depth: 2
+    citation_package: natbib
+classoption: landscape
+---
+
+```{r, include = FALSE}
+
+## Load libraries ---------------------
+
+library(tidyverse)
+library(glue)
+library(here)
+library(magrittr)
+library(stargazer)
+
+## Set options ------------------------
+
+options(scipen = 999)
+
+## Load data --------------------------
+
+full_data <- read_csv(here("03.Data", "trustpilot_funnel_data.csv"))
+
+
+```
+
+```{r, include = FALSE}
+
+## Create models ----------------------
+
+## UK
+
+## Regression 1 (search ~ prompted_awareness, UK)
+reg_1_uk <- full_data %>%
+  filter(country == "UK") %$%
+  lm(search ~ prompted_awareness + I(prompted_awareness^2))
+
+## Regression 2 (consumer_users ~ search, UK)
+reg_2_uk <- full_data %>%
+  filter(country == "UK") %$%
+  lm(consumer_users ~ search)
+
+## Regression 3 (traffic ~ consumer_users, UK)
+reg_3_uk <- full_data %>%
+  filter(country == "UK") %$%
+  lm(biz_traffic_consumer ~ consumer_users)
+
+## Regression 4 (consumer_leads ~ traffic, UK)
+reg_4_uk <- full_data %>%
+  filter(country == "UK") %$%
+  lm(consumer_leads ~ biz_traffic_consumer)
+
+## Italy 
+
+## Regression 1 (search ~ prompted_awareness, UK)
+reg_1_it <- full_data %>%
+  filter(country == "IT") %$%
+  lm(search ~ prompted_awareness)
+
+## Regression 2 (consumer_users ~ search, UK)
+reg_2_it <- full_data %>%
+  filter(country == "IT") %$%
+  lm(consumer_users ~ search + I(search^2) +
+       I(search^3))
+
+## Regression 3 (traffic ~ consumer_users, UK)
+reg_3_it <- full_data %>%
+  filter(country == "IT") %$%
+  lm(biz_traffic_consumer ~ consumer_users)
+
+## Regression 4 (consumer_leads ~ traffic, UK)
+reg_4_it <- full_data %>%
+  filter(country == "IT") %$%
+  lm(consumer_leads ~ biz_traffic_consumer)
+
+```
+
+```{r, echo = FALSE, results = "asis"}
+
+stargazer(reg_1_uk, reg_2_uk, reg_3_uk, reg_4_uk,
+          title = "Dynamic Funnel Models for UK",
+          dep.var.labels = c("Search", "Consumer Site Users",
+                            "Business Site Traffic", "Leads Generated"),
+          covariate.labels = c("Prompted Awareness",
+                               "Prompted Awareness (square term)", "Search",
+                               "Consumer Site Users", "Business Site Traffic"),
+          
+          type = "latex")
+
+```
+
+```{r, echo = FALSE, results = "asis"}
+
+stargazer(reg_1_it, reg_2_it, reg_3_it, reg_4_it,
+          title = "Dyanmic Funnel Models for Italy",
+          dep.var.labels = c("Search", "Consumer Site Users",
+                            "Business Site Traffic", "Leads Generated"),
+          covariate.labels = c("Prompted Awareness", "Search",
+                               "Search (square term)", "Search (cube term)",
+                               "Consumer Site Users", "Business Site Traffic"),
+          
+          type = "latex")
+
+```

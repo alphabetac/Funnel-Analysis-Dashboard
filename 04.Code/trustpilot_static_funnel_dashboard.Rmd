@@ -1,0 +1,171 @@
+---
+title: "Trustpilot Dynamic Funnel Analysis"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: flatly
+    orientation: columns
+runtime: shiny
+---
+
+```{r global, include = FALSE}
+
+## Load libraries ---------------------
+
+library(glue)
+library(tidyverse)
+library(plotly)
+library(magrittr)
+library(flexdashboard)
+library(lubridate)
+library(DT)
+library(hjplottools)
+library(zoo)
+library(here)
+
+## Set options ------------------------
+
+options(scipen = 999)
+
+## Load data --------------------------
+
+full_data <- read_csv(here("03.Data", "trustpilot_funnel_data.csv"))
+
+```
+
+Funnel Analysis Overview
+=======================================================================
+
+Column {data-width = 500}
+-----------------------------------------------------------------------
+
+```{r}
+
+```
+
+Column {data-width = 500}
+-----------------------------------------------------------------------
+
+
+Static Funnel
+=======================================================================
+
+Column {.tabset}
+-----------------------------------------------------------------------
+
+### Static Funnel - UK
+
+```{r}
+
+renderPlotly({
+  
+  elements <- c("Prompted Awareness", "Share of Search", "Consumer Sessions",
+                "Business Site Traffic", "Leads")
+  
+  uk_stat_p_a <- full_data %>%
+    filter(month_start == "2021-12-01", country == "UK") %>%
+    pull(prompted_awareness) / 
+    0.887 %>%
+    round(2)
+  
+  uk_stat_search <- full_data %>%
+    filter(month_start == "2021-12-01", country == "UK") %>%
+    pull(search)
+  
+  uk_stat_visits <- full_data %>%
+    filter(month_start == "2021-12-01", country == "UK") %>%
+    pull(consumer_users) / 
+    11240000
+  
+  uk_stat_biz <- full_data %>%
+    filter(month_start == "2021-12-01", country == "UK") %>%
+    pull(biz_traffic_consumer) 
+    ##### AWAITING BENCHMARKS ######
+  
+  uk_stat_leads <- full_data %>%
+    filter(month_start == "2021-12-01", country == "UK") %>%
+    pull(consumer_leads)
+    ##### AWAITING BENCHMARKS ######
+  
+  plot_ly() %>%
+    add_trace(type = "funnel",
+              text = c(glue("Prompted Awareness: ",
+                            uk_stat_p_a),
+                       glue("Share of Search: ",
+                            round(uk_stat_search, 2)),
+                       glue("Consumer Site Users: ",
+                            prettyNum(uk_stat_visits, big.mark = ",")),
+                       glue("Business Site Traffic (from Consumer Site): ",
+                            prettyNum(round(uk_stat_biz, 0), big.mark = ",")),
+                       glue("Leads: ",
+                            prettyNum(round(uk_stat_leads)))),
+              y = elements,
+              x = c(round(uk_stat_p_a, 2),
+                    round(uk_stat_search, 2),
+                    round(uk_stat_visits, 2),
+                    round(uk_stat_biz, 2), ##### AWAITING BENCHMARKS ######
+                    round(uk_stat_leads))) %>% ##### AWAITING BENCHMARKS ######
+    layout(yaxis = list(categoryarray = elements))
+  
+})
+
+```
+
+### Static Funnel - Italy
+
+```{r}
+
+renderPlotly({
+  
+  elements <- c("Prompted Awareness", "Share of Search", "Consumer Sessions",
+                "Business Site Traffic", "Leads")
+  
+  uk_stat_p_a <- full_data %>%
+    filter(month_start == "2021-12-01", country == "IT") %>%
+    pull(prompted_awareness) / 
+    0.787 %>%
+    round(2)
+  
+  uk_stat_search <- full_data %>%
+    filter(month_start == "2021-12-01", country == "IT") %>%
+    pull(search)
+  
+  uk_stat_visits <- full_data %>%
+    filter(month_start == "2021-12-01", country == "IT") %>%
+    pull(consumer_users) / 
+    42015
+  
+  uk_stat_biz <- full_data %>%
+    filter(month_start == "2021-12-01", country == "IT") %>%
+    pull(biz_traffic_consumer)
+    ##### AWAITING BENCHMARKS ######
+  
+  uk_stat_leads <- full_data %>%
+    filter(month_start == "2021-12-01", country == "IT") %>%
+    pull(consumer_leads)
+    ##### AWAITING BENCHMARKS ######
+  
+  plot_ly() %>%
+    add_trace(type = "funnel",
+              text = c(glue("Prompted Awareness: ",
+                            uk_stat_p_a),
+                       glue("Share of Search: ",
+                            round(uk_stat_search, 2)),
+                       glue("Consumer Site Users: ",
+                            prettyNum(uk_stat_visits, big.mark = ",")),
+                       glue("Business Site Traffic (from Consumer Site): ",
+                            prettyNum(round(uk_stat_biz, 0), big.mark = ",")),
+                       glue("Leads: ",
+                            prettyNum(round(uk_stat_leads)))),
+              y = elements,
+              x = c(round(uk_stat_p_a, 2),
+                    round(uk_stat_search, 2),
+                    round(uk_stat_visits, 2),
+                    round(uk_stat_biz, 2), ##### AWAITING BENCHMARKS ######
+                    round(uk_stat_leads))) %>% ##### AWAITING BENCHMARKS ######
+    layout(yaxis = list(categoryarray = elements))
+  
+})
+
+```
+
+
